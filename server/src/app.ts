@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 
-app.use('/signup',userRoute)
+app.use('/user',userRoute)
 
 const PORT: number = parseInt(process.env.PORT || '3000');
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

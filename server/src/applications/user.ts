@@ -47,5 +47,51 @@ export const CreateUser = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
+
+
+//login user
+
+export const LoginUser = async (req:Request, res:Response) : Promise<void> => {
+    try {
+      const { email, password } = req.body;
+  
+      // Validate the required fields
+      if (!email || !password) {
+        res.status(400).json({ error: 'Email and password are required' });
+        return;
+      }
+  
+      // Connect to the database
+      const pool = await connectToDatabase();
+  
+      // Query the database to find the user by email
+      const result = await pool
+        .request()
+        .input('Email', sql.NVarChar, email)
+        .query('SELECT * FROM Users WHERE Email = @Email');
+  
+      if (result.recordset.length === 0) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+  
+      const user = result.recordset[0];
+  
+      // Compare the provided password with the stored hashed password
+      const isMatch = await bcrypt.compare(password, user.Password);
+      if (!isMatch) {
+        res.status(401).json({ error: 'Invalid credentials' });
+      }
+  
+      // Success: User is authenticated
+      res.status(200).json({ message: 'Login successful', userId: user.UserID });
+  
+    } catch (error) {
+      console.error('Error during login:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  };
+
+
 // Export properly for clean import
-export default { CreateUser };
+export default { CreateUser , LoginUser };
