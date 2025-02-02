@@ -35,7 +35,7 @@ class Login extends Component {
       this.setState({ serverMessage: '', errors: {} });
 
       try {
-        const response = await fetch('http://localhost:5000/login', {
+        const response = await fetch('http://localhost:5000/user/auth', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

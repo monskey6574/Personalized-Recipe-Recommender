@@ -1,27 +1,23 @@
 import React, { Component } from 'react';
-import "./form.css";
-import Button from "../button/Button";
+import './form.css';
+import Button from '../button/Button';
 
 export default class RecipeRecommendation extends Component {
   constructor(props) {
     super(props);
-    // Create a ref for the slider
     this.sliderRef = React.createRef();
   }
 
   state = {
     ingredients: [],
-    maxCalories: 500,
-    servings: 1, // Default servings is 1
-    notes: '',
     errors: {},
     currentIngredient: '',
+    healthPreferences: [],
+    recipeResults: [],
   };
 
   componentDidMount() {
-    // Add event listener after the component mounts
     const slider = this.sliderRef.current;
-
     if (slider) {
       slider.addEventListener('input', () => {
         const value = slider.value;
@@ -33,7 +29,6 @@ export default class RecipeRecommendation extends Component {
   }
 
   componentWillUnmount() {
-    // Clean up event listener when the component unmounts
     const slider = this.sliderRef.current;
     if (slider) {
       slider.removeEventListener('input', this.handleSliderInput);
@@ -60,31 +55,59 @@ export default class RecipeRecommendation extends Component {
 
   removeIngredient = (ingredient) => {
     this.setState({
-      ingredients: this.state.ingredients.filter(item => item !== ingredient),
+      ingredients: this.state.ingredients.filter((item) => item !== ingredient),
     });
   };
 
-  handleServingsChange = (type) => {
-    this.setState((prevState) => ({
-      servings: type === 'increment' ? prevState.servings + 1 : Math.max(1, prevState.servings - 1), // Ensure servings don't go below 1
-    }));
+  toggleHealthPreference = (preference) => {
+    this.setState((prevState) => {
+      const { healthPreferences } = prevState;
+      return {
+        healthPreferences: healthPreferences.includes(preference)
+          ? healthPreferences.filter((item) => item !== preference)
+          : [...healthPreferences, preference],
+      };
+    });
   };
 
-  handleSubmit = (e) => {
+  handleSubmit = async (e) => {
     e.preventDefault();
     const errors = this.validateForm();
     if (Object.keys(errors).length > 0) {
       this.setState({ errors });
-    } else {
-      alert("Recipe recommendation request submitted successfully!");
-      this.setState({
-        ingredients: [],
-        maxCalories: 500,
-        servings: 1,
-        notes: '',
-        errors: {},
-        currentIngredient: '',
+      return;
+    }
+
+    const { ingredients, healthPreferences } = this.state;
+
+    try {
+      const response = await fetch("http://localhost:5000/recipe/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ingredients: ingredients,
+          healthPreferences: healthPreferences,
+        }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Response Error:", errorText);
+        alert(`Error: ${errorText}`);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Recipe Recommendations:", data);
+      alert("Recipe recommendations fetched successfully!");
+
+      // Update the state to store recipe results
+      this.setState({ recipeResults: data.recipes || [] });
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      alert("There was an error while fetching recipe recommendations.");
     }
   };
 
@@ -93,16 +116,12 @@ export default class RecipeRecommendation extends Component {
     if (this.state.ingredients.length === 0) {
       errors.ingredients = "At least one ingredient is required.";
     }
-    if (!this.state.maxCalories) {
-      errors.maxCalories = "Maximum calories are required.";
-    } else if (isNaN(this.state.maxCalories)) {
-      errors.maxCalories = "Maximum calories must be a number.";
-    }
     return errors;
   };
 
   render() {
-    const { ingredients, maxCalories, servings, notes, errors, currentIngredient } = this.state;
+    const { ingredients, errors, currentIngredient, healthPreferences, recipeResults } = this.state;
+    const healthOptions = ["Vegetarian", "Vegan", "gluten Free", "Low-Carb", "Keto", "Dairy-Free", "Nut-Free"];
 
     return (
       <section className="recipe-recommendation">
@@ -125,11 +144,7 @@ export default class RecipeRecommendation extends Component {
                   placeholder="Enter an ingredient (e.g., chicken, tomatoes)"
                   className="ingredient-field"
                 />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={this.addIngredient}
-                >
+                <Button type="button" variant="secondary" onClick={this.addIngredient}>
                   Add
                 </Button>
               </div>
@@ -137,76 +152,56 @@ export default class RecipeRecommendation extends Component {
                 {ingredients.map((ingredient, index) => (
                   <span key={index} className="ingredient-tag">
                     {ingredient}
-                    <button type="button" onClick={() => this.removeIngredient(ingredient)}>×</button>
+                    <button type="button" onClick={() => this.removeIngredient(ingredient)}>
+                      ×
+                    </button>
                   </span>
                 ))}
               </div>
               {errors.ingredients && <span className="error-message">{errors.ingredients}</span>}
             </div>
 
-            {/* Maximum Calories Slider Section */}
+            {/* Health Preferences Section */}
             <div className="form-group">
-              <label className="form-label">Maximum Calories</label>
-              <div className="calories-slider-container">
-                <input
-                  ref={this.sliderRef}  // Attach the ref here
-                  type="range"
-                  name="maxCalories"
-                  min="100"
-                  max="2000"
-                  value={maxCalories}
-                  onChange={this.handleChange}
-                  className="calories-slider"
-                />
-                <span className="calories-value">{maxCalories} kcal</span>
+              <label className="form-label">Health Preferences</label>
+              <div className="health-options">
+                {healthOptions.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    variant={healthPreferences.includes(option) ? "primary" : "outline"}
+                    onClick={() => this.toggleHealthPreference(option)}
+                  >
+                    {option}
+                  </Button>
+                ))}
               </div>
-              {errors.maxCalories && <span className="error-message">{errors.maxCalories}</span>}
-            </div>
-
-            {/* Servings Control Section */}
-            <div className="form-group flex items-center space-x-4">
-              <label className="form-label">Number of Servings</label>
-              <div className="servings-controls flex items-center space-x-2">
-                <Button
-                  type="button"
-                  onClick={() => this.handleServingsChange('decrement')}
-                  className="bg-gray-300 text-lg text-center w-8 h-8 rounded-full"
-                >
-                  -
-                </Button>
-                <span className="text-lg font-semibold">{servings}</span>
-                <Button
-                  type="button"
-                  onClick={() => this.handleServingsChange('increment')}
-                  className="bg-gray-300 text-lg text-center w-8 h-8 rounded-full"
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-
-            {/* Additional Notes Section */}
-            <div className="form-group">
-              <label className="form-label">Additional Notes</label>
-              <textarea
-                name="notes"
-                value={notes}
-                onChange={this.handleChange}
-                placeholder="Add any notes or preferences (e.g., vegetarian, gluten-free)"
-                className="notes-field"
-              />
             </div>
 
             {/* Submit Button */}
             <div className="form-actions">
-              <Button
-                type="submit"
-                variant="primary"
-                onClick={this.handleSubmit}
-              >
+              <Button type="submit" variant="primary" onClick={this.handleSubmit}>
                 Get Recipes
               </Button>
             </div>
+          </div>
+
+          {/* Recipe Results Section */}
+          <div className="recipe-results">
+            {recipeResults.length > 0 ? (
+              <div className="recipe-cards">
+                {recipeResults.map((recipe, index) => (
+                  <div key={index} className="recipe-card">
+                    <h3>{recipe.name}</h3>
+                    <p>{recipe.description}</p>
+                    <p><strong>Ingredients:</strong> {recipe.ingredients.join(", ")}</p>
+                    <p><strong>Instructions:</strong> {recipe.instructions}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No recipes found. Please try again.</p>
+            )}
           </div>
         </div>
       </section>
