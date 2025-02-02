@@ -12,7 +12,7 @@ export default class RecipeRecommendation extends Component {
     ingredients: [],
     errors: {},
     currentIngredient: '',
-    healthPreferences: [],
+    healthPreferences: '',
     recipeResults: [],
   };
 
@@ -70,6 +70,8 @@ export default class RecipeRecommendation extends Component {
     });
   };
 
+
+
   handleSubmit = async (e) => {
     e.preventDefault();
     const errors = this.validateForm();
@@ -77,9 +79,9 @@ export default class RecipeRecommendation extends Component {
       this.setState({ errors });
       return;
     }
-
+  
     const { ingredients, healthPreferences } = this.state;
-
+  
     try {
       const response = await fetch("http://localhost:5000/recipe/search", {
         method: "POST",
@@ -91,26 +93,37 @@ export default class RecipeRecommendation extends Component {
           healthPreferences: healthPreferences,
         }),
       });
-
+  
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Response Error:", errorText);
         alert(`Error: ${errorText}`);
         return;
       }
-
+  
       const data = await response.json();
       console.log("Recipe Recommendations:", data);
+  
+      // Ensure ingredients are converted to an array if they are a string
+      const recipes = data.recipes.map((recipe) => {
+        return {
+          ...recipe,
+          ingredients: recipe.ingredients.split(',').map(ingredient => ingredient.trim())
+        };
+      });
+  
+      this.setState({ recipeResults: recipes });
       alert("Recipe recommendations fetched successfully!");
-
-      // Update the state to store recipe results
-      this.setState({ recipeResults: data.recipes || [] });
     } catch (error) {
       console.error("Error submitting request:", error);
       alert("There was an error while fetching recipe recommendations.");
     }
+  
+    console.log('Ingredients:', ingredients);
+    console.log('Health Preferences:', healthPreferences);
   };
-
+  
+  
   validateForm = () => {
     const errors = {};
     if (this.state.ingredients.length === 0) {
@@ -118,10 +131,11 @@ export default class RecipeRecommendation extends Component {
     }
     return errors;
   };
+  
 
   render() {
     const { ingredients, errors, currentIngredient, healthPreferences, recipeResults } = this.state;
-    const healthOptions = ["Vegetarian", "Vegan", "gluten Free", "Low-Carb", "Keto", "Dairy-Free", "Nut-Free"];
+    const healthOptions = ["Vegetarian", "vegan", "gluten free", "low carb", "Keto", "Dairy-Free", "Nut-Free" , "high protein"];
 
     return (
       <section className="recipe-recommendation">
