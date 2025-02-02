@@ -1,7 +1,9 @@
-import express from "express";
-import { getRecipe } from "../applications/recipeController";
+// api/recipeApi.ts
+import express from 'express';
+import { getRecipes } from '../applications/recipeController'; // Import the controller
 
 export const recipeRoutes = express.Router();
 
-recipeRoutes.post("/get-recipe", getRecipe);
+// Define route for searching recipes
+recipeRoutes.post('/search', getRecipes);
 

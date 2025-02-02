@@ -1,27 +1,24 @@
-import { Request, Response } from 'express';
-import { connectToDatabase, sql } from '../config/db';
+// controllers/recipeSearchController.ts
+import { Request, Response, RequestHandler } from 'express';
+import { searchRecipes } from '../services/recipeSearchService'; // Import the search function
 
-// Recipe endpoint
-export const getRecipe = async (req: Request, res: Response) => {
-    const { ingredients, healthCondition } = req.body;
+// Recipe search endpoint
+export const getRecipes: RequestHandler = async (req: Request, res: Response, next: Function): Promise<void> => {
+  const { ingredients, healthCondition } = req.body;
 
-    try {
-        const pool = await connectToDatabase();  // Get the connection pool
-        
-        // Build the SQL query dynamically based on the ingredients and health condition
-        const query = `
-            SELECT * FROM Recipes
-            WHERE ingredients LIKE '%${ingredients.join("%' OR ingredients LIKE '%")}%' 
-            AND health_labels LIKE '%${healthCondition}%'
-        `;
+  if (!ingredients || !healthCondition) {
+    res.status(400).json({ error: "Ingredients and health condition are required" });
+    return;
+  }
 
-        // Query the database
-        const result = await pool.request().query(query);
-
-        // Return the result as JSON
-        res.json({ recipes: result.recordset });
+  try {
+    // Call the searchRecipes function to get matching recipes from Azure Search
+    const recipes = await searchRecipes(ingredients, healthCondition);
+    
+      res.status(200).json({ recipes });
     } catch (err) {
-        console.error('❌ Error in fetching recipes:', err);
-        res.status(500).json({ error: 'Failed to fetch recipes' });
+      console.error("Error fetching recipes:", err);
+      res.status(500).json({ error: 'Failed to fetch recipes' });
     }
-};
+  }
+
