@@ -4,16 +4,16 @@ import { searchRecipes } from '../services/recipeSearchService'; // Import the s
 
 // Recipe search endpoint
 export const getRecipes: RequestHandler = async (req: Request, res: Response, next: Function): Promise<void> => {
-  const { ingredients, healthCondition } = req.body;
+  const { ingredients, healthPreferences } = req.body;
 
-  if (!ingredients || !healthCondition) {
+  if (!ingredients || !healthPreferences) {
     res.status(400).json({ error: "Ingredients and health condition are required" });
     return;
   }
 
   try {
     // Call the searchRecipes function to get matching recipes from Azure Search
-    const recipes = await searchRecipes(ingredients, healthCondition);
+    const recipes = await searchRecipes(ingredients, healthPreferences);
     
       res.status(200).json({ recipes });
     } catch (err) {
