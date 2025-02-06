@@ -25,6 +25,8 @@
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.2",
     "msnodesqlv8": "^4.4.0",
     "mssql": "^11.0.1",
@@ -38,6 +40,8 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
+    "@types/express-session": "^1.18.1",
+    "@types/jsonwebtoken": "^9.0.8",
     "@types/mssql": "^9.1.6",
     "@types/node": "^20.17.10",
     "nodemon": "^3.1.7",
